@@ -4,21 +4,21 @@
 
 ## 1. Introduction
 
-ros2_metas is the ROS middleware node for the metaS driver, which is used to receive sensor data from metaS, integrate the data, and then publish it for use by other nodes. This includes data from three sources: camera, lidar, and IMU.
+ros_metas is a MetaS sensor-driven ROS middleware node that receives sensor data, integrates and publishes it to other nodes for use. Sensor data includes cameras, liDAR and IMUs.
 
 ## 2. Installation
 
-### 2.1 Build (Linux + ROS 2)
+### 2.1 Build (Linux + ROS)
 
-Ensure you have a `ROS 2` distribution installed. This project has been developed and tested on `ROS 2 Humble`.
+Ensure that the ROS noetic build environment is installed and that the entire project is developed and tested based on the ROS noetic version.
 
-With your `ROS 2` environment ready, clone the repository into your workspace using the following commands:
+When the environment is ready, use the following command to download the code to the working directory.
 
 ```bash
 # Using ssh
-git clone git@gitlab.robosense.cn:super_sensor_sdk/ros2_sdk/sdk_infra.git
+git clone git@github.com:RoboSense-Robotics/robosense_ac_ros_sdk_infra.git
 # Using http
-git clone http://gitlab.robosense.cn/super_sensor_sdk/ros2_sdk/sdk_infra.git
+git clone https://github.com/RoboSense-Robotics/robosense_ac_ros_sdk_infra.git
 ```
 Then, prepare system build environment base on Radxa and X86.
 
@@ -62,100 +62,36 @@ sudo apt-get install libavformat-dev libavdevice-dev libavcodec-dev
 ```
 
 #### 2.1.3 Build
-Then, enter the modules/ros_metas directory, Run the following commands to compile:
+Then, enter the codepath directory, Run the following commands to compile:
 
 ```bash
-colcon build
+catkin_make
 ```
 
 ## 3. Usage
 
 ### 3.1 Prepare the ros_metas environment
-Refresh the bash profile of the workspace to ensure that the environment configuration of the components is ok.
-Run the following commands:
+For the compiled package, run the source command to set the node runtime environment. For the bash interpreter terminal and the zsh interpreter terminal, run the following commands respectively
 ```bash
-source install/setup.bash
+source devel/setup.bash 
 ```
 
 ### 3.2 Run the ros_metas Node
-The ros_metas node can be run using the ros2 run command.
+Run the following command to run the ros_metas node
+
 ```bash
-ros2 run  metas_ros ms_node
+roslaunch metas_ros start.launch
 ```
-### 3.3 View the published sensor data.
-
-#### 3.3.1 View Published Sensor Data Through a User Interface
-
-To view the published sensor data via a graphical interface, you can use tools like rviz2 in ROS2. Here are the steps:
-1. Install rviz:
-Ensure that rviz is installed:
-```bash
-sudo apt-get install ros-<ros2-distro>-rviz2
-```
-2. Launch rviz:
-Start rviz to visualize the sensor data:
-```bash
-rviz2
-```
-3. Configure rviz:
-In the rviz interface, add the necessary displays to visualize different types of sensor data:
-For image data, add the Image display.
-For point cloud data from lidar, add the PointCloud2 display.
-For IMU data, add the IMU display.
-
-4. Select Topics:
-Configure the displays to subscribe to the appropriate topics published by the ros2_metas node.
-
-By following these steps, you can view the published sensor data from the ros2_metas node using graphical interfaces like rviz.
-
-#### 3.3.2 Recording and Viewing Data
-You can use the built-in ROS2 bag recording tool to record and then play back the data for viewing. Here are the steps:
-
-1. Record Data:
-Use the ros2 bag record command to record data from specific topics. For example, to record data from all topics, you can use:
-```bash
-ros2 bag record -a
-```
-
-To record data from specific topics, specify the topic names:
-```bash
-ros2 bag record /topic1 /topic2
-```
-2. Play Back Data:
-Once the recording is complete, you can play back the recorded data using the ros2 bag play command:
-sh
-```bash
-ros2 bag play <bagfile>
-```
-Replace <bagfile> with the path to your recorded bag file.
-
-3. View Data:
-While playing back the data, you can use tools like rviz to view the data.
-For more detailed instructions on recording and playing back data, you can refer to the ROS2 documentation on recording and playing back data .
-
 
 ## 4. Features
 ### 4.1  Dependencies
-The ros2_metas node relies on several key libraries and packages to function properly. Here is a detailed list of the dependencies:
+The ros_metas node relies on several key libraries and packages to function properly. Here is a detailed list of the dependencies:
 
-#### 4.1.1 ROS2 Core Libraries:
-* rclcpp: The ROS2 C++ client library, providing the core functionality for ROS2 nodes.
-* sensor_msgs: Provides standard message types for common sensor data, such as images and point clouds.
-* std_msgs: Provides standard message types for basic data types, such as integers, floats, and strings.
 #### 4.1.2 robosense_msgs:
-This custom ROS2 package defines the message formats for H.265 compressed images and other sensor data specific to the metaS sensors. It is essential for the ros2_metas node to interpret and publish the sensor data correctly.
-#### 4.1.3 libmfsensor.so
-metaS sensor driver lib, include camera, lidar and imu.
-
+This custom ROS package defines the message formats for H.265 compressed images and other sensor data specific to the metaS sensors. It is essential for the ros_metas node to interpret and publish the sensor data correctly.
 ### 4.2 Topic 
 1. camera RGB image topic:/rs_camera/rgb
 2. lidar topic:/rs_lidar/points
 3. imu topic:/rs_imu
 4. camera h265 video topic:/rs_camera/compressed
-
-## 5. FAQ
-
-For further details and troubleshooting, refer to the FAQ section.
-
-[Create New Issue](http://gitlab.robosense.cn/super_sensor_sdk/sdk_middleware/issues/new)
 

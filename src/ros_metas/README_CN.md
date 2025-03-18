@@ -1,24 +1,24 @@
-# ros2_metas
+# ros_metas
 
 [README](http://10.10.0.20/super_sensor_sdk/ros2_sdk/sdk_infra/-/blob/main/modules/ros_metas/README.md) | [中文文档](http://10.10.0.20/super_sensor_sdk/ros2_sdk/sdk_infra/-/blob/main/modules/ros_metas/README_CN.md)
 
 ## 1. 简介
 
-ros2_metas是MetaS传感器驱动的ROS中间件节点,用于接收传感器数据，整合和发布给其它节点使用。传感器数据包括摄像头，激光雷达和IMU。
+ros_metas是MetaS传感器驱动的ROS中间件节点,用于接收传感器数据，整合和发布给其它节点使用。传感器数据包括摄像头，激光雷达和IMU。
 
 ## 2. 构建
 
-### 2.1 编译 (Linux + ROS 2)
+### 2.1 编译 (Linux + ROS)
 
-确保ROS2的编译环境已安装，整个工程的开发和测试基于的是ROS 2 Humble版本。
+确保ROS noetic的编译环境已安装，整个工程的开发和测试基于的是ROS noetic版本。
 
-ROS 2环境准备好后，使用以下命令将代码下载到工作目录下。
+环境准备好后，使用以下命令将代码下载到工作目录下。
 
 ```bash
 # Using ssh
-git clone git@gitlab.robosense.cn:super_sensor_sdk/ros2_sdk/sdk_infra.git
+git clone git@github.com:RoboSense-Robotics/robosense_ac_ros_sdk_infra.git
 # Using http
-git clone http://gitlab.robosense.cn/super_sensor_sdk/ros2_sdk/sdk_infra.git
+git clone https://github.com/RoboSense-Robotics/robosense_ac_ros_sdk_infra.git
 ```
 Then, prepare system build environment base on Radxa and X86.
 然后进行系统编译依赖的准备操作，如下基于Radxa开发板及X86环境.
@@ -65,102 +65,40 @@ sudo apt-get install libavformat-dev libavdevice-dev libavcodec-dev
 ```
 
 #### 2.1.3 编译
-然后进入modules/ros_metas目录, 使用以下命令进行编译:
+然后进入codepath目录, 使用以下命令进行编译:
 
 ```bash
-colcon build
+catkin_make
 ```
 ## 3. 运行
 
 ### 3.1 准备环境
 
-刷新工作目录下的bash配置文件，确保组件的配置是完整的。
-使用以下命令刷新:
+对于编译好的包，执行source命令设置节点运行环境: 对于bash解释器终端和zsh解释器终端，分别运行如下对应命令
 
 ```bash
-source install/setup.bash
+source devel/setup.bash 
 ```
 
 ### 3.2 运行ros_metas节点
 使用以下命令运行ros_metas节点
 
 ```bash
-ros2 run  metas_ros ms_node
-```
-### 3.3 查看发布的传感器数据
-
-#### 3.3.1 通过界面来查看传感器数据
-
-可以使用带界面的工具，如rviz2查看传感器输出的数据，以下是rviz2的安装步骤:
-
-1. 安装rviz:
-```bash
-sudo apt-get install ros-<ros2-distro>-rviz2
-```
-2. 运行rviz:
-```bash
-rviz2
-```
-3. 配置rviz:
-在rviz界面，需要增加特定显示的传感器节点，如下:
-图像数据增加Image节点.
-激光雷达数据选择PointCloud2.
-IMU数据选择IMU.
-
-4. 选择Topic:
-选择ros2_metas节点发布的topic.
-
-参照4.2 Topic章节选择topic显示，可使rviz显示ros2_metas节点发布的传感器数据.
-
-#### 3.3.2 录制数据并查看
-可通过ROS2的录制工具进行数据录制并回放查看数据，按以下步骤操作:
-
-1. 录制
-使用ros2 bag record命令进行录制:
-录制所有topic可使用以下命令:
-```bash
-ros2 bag record -a
+roslaunch metas_ros start.launch
 ```
 
-录制特定topic可使用以下命令:
-```bash
-ros2 bag record /topic1 /topic2
-```
-2. 回放
-录制完成后，可以通过以下命令进行回放:
-sh
-```bash
-ros2 bag play <bagfile>
-```
-替换<bagfile>为相应录制的路径文件
-
-3. 查看数据:
-可通过一些工具进行查看，例如rviz
-对于录制和回放的更详细内容可参照ROS2文档的录制回放章节.
 
 
 ## 4. 特性
 ### 4.1  依赖
-ros2_metas节点依赖以下关键的库和软件包:
+ros_metas节点依赖以下关键的库和软件包:
 
-#### 4.1.1 ROS2 Core 库:
-* rclcpp: ROS2 C++ 客户端库, 提供ROS2的核心功能.
-* sensor_msgs: 传感器的标准数据消息，包括images and point clouds.
-* std_msgs: ROS2的标准消息.
 #### 4.1.2 robosense_msgs:
-为H.265定制的ROS2消息，用于传输metaS传感器的图像数据。
-#### 4.1.3 libmfsensor.so
-metaS的传感器库，包括camera, lidar and imu.
+为H.265定制的ROS消息，用于传输metaS传感器的图像数据。
 
 ### 4.2 Topic 
 1. camera RGB image topic:/rs_camera/rgb
 2. lidar topic:/rs_lidar/points
 3. imu topic:/rs_imu
 4. camera h265 video topic:/rs_camera/compressed
-
-## 5. FAQ
-
-更详细的内容及问题，请访问FAQ章节
-
-[Create New Issue](http://gitlab.robosense.cn/super_sensor_sdk/sdk_middleware/issues/new)
 

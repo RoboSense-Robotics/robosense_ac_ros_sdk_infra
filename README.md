@@ -4,7 +4,7 @@
 
 ## 1. Overview
 
-​	The ros_ac_sdk_infra project is a ROs-based package project. Based on this project, the point cloud, image and IMU data output of the device can be visually viewed by accessing RoboSense AC hardware in ROS environment.
+​	The ros_ac_sdk_infra project is a ROS-based package project. Based on this project, the point cloud, image and IMU data output of the device can be visually viewed by accessing RoboSense AC hardware in ROS environment.
 
 ## 2. Prerequisites 
 
