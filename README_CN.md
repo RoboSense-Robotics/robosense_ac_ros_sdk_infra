@@ -7,12 +7,10 @@
 ​	ros_ac_sdk_infra工程项目是基于ROS的包工程，基于该项目可以实现在ROS环境中，在接入RoboSense AC硬件即可可视化查看设备输出的点云、图像、IMU数据。
 
 
-
 ## 2. 前置依赖
 
 - Ubuntu 20.04 (其他操作系统版本，需要适配)
 - 操作系统匹配的ROS版本即可
-
 
 
 ## 3. 驱动安装和硬件连接
@@ -45,12 +43,8 @@ sudo bash metaS_usb_permission.sh
   ```shell
   # 进入源码根目录
   cd /codepath
-catkin_make
+  catkin_make
   ```
-  
-  等待编译完成即可 
-
-
 
 ## 5. 运行metas_ros
 

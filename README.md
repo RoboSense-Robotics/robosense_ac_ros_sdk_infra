@@ -13,8 +13,6 @@
 - ROS which is matched the system version 
 
 
-
-
 ## 3. Drive Install And Hardware Connect 
 
 ### 3.1 Drive Install(Only Need Once)  
@@ -43,12 +41,8 @@ Due to the large amount of data transmission of the device provided by Robosense
   ```shell
   # Go to the source code root directory
   cd /codepath
-catkin_make
+  catkin_make
   ```
-
-  and waiting for finish. 
-  
-  
 
 ## 5. Run 
 
