@@ -28,15 +28,11 @@ cd /codepath/src/ros_metas/scripts
 sudo bash metaS_usb_permission.sh
 ```
 
-等待安装，如果安装图中所示打印结果，则表示安装成功，重启电脑即可。 
-
-![image-20250308154838320](/home/sti/.config/Typora/typora-user-images/image-20250308154838320.png)
+等待安装，安装完成后，重启电脑即可。 
 
 ### 3.2 硬件连接
 
-由于Robosense提供的设备数据传输量较大，所以要求必须使用USB3.0接入，连接后，可以使用usbview 工具查看进行进一步确认: 
-
-![image-20250308154928477](/home/sti/.config/Typora/typora-user-images/image-20250308154928477.png)
+由于Robosense提供的设备数据传输量较大，所以要求必须使用USB3.0接入，连接后，可以使用usbview 工具查看进行进一步确认。
 
 
 

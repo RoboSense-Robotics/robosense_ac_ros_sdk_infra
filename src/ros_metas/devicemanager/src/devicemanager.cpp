@@ -1,3 +1,19 @@
+/*********************************************************************************************************************
+  Copyright 2025 RoboSense Technology Co., Ltd
+
+    Licensed under the Apache License, Version 2.0 (the "License");
+    you may not use this file except in compliance with the License.
+    You may obtain a copy of the License at
+
+  http://www.apache.org/licenses/LICENSE-2.0
+
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an "AS IS" BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and
+    limitations under the License.
+*********************************************************************************************************************/
+
 #include "hyper_vision/devicemanager/devicemanager.h"
 
 namespace robosense {
@@ -9,6 +25,12 @@ DeviceManager::DeviceManager() {
   _start = false;
   _inited = false;
   _event_cb = nullptr;
+  _stopProcessingThreads = false;
+
+  // 启动消息处理线程
+  _pointCloudProcessingThread = std::thread(&DeviceManager::processPointCloudQueue, this);
+  _imageProcessingThread = std::thread(&DeviceManager::processImageQueue, this);
+  _imuProcessingThread = std::thread(&DeviceManager::processImuQueue, this);
 }
 
 DeviceManager::~DeviceManager() { stop(); }
@@ -64,6 +86,19 @@ bool DeviceManager::init(const bool isEnableDebug) {
 }
 
 int DeviceManager::stop() {
+  _stopProcessingThreads = true;
+  _pointCloudQueueCond.notify_one();
+  if (_pointCloudProcessingThread.joinable()) {
+      _pointCloudProcessingThread.join();
+  }
+  _imageQueueCond.notify_one();
+  if (_imageProcessingThread.joinable()) {
+      _imageProcessingThread.join();
+  }
+  _imuQueueCond.notify_one();
+  if (_imuProcessingThread.joinable()) {
+      _imuProcessingThread.join();
+  }
   if (!_inited) {
     return 0;
   }
@@ -379,8 +414,10 @@ void DeviceManager::localRunPointCloudCallback(
       return;
     }
   }
-  if (msgPtr && _pc_cb) {
-    _pc_cb(msgPtr, uuid);
+  if (msgPtr) {
+    std::lock_guard<std::mutex> lg(_pointCloudQueueMutex);
+    _pointCloudQueue.push(std::make_pair(msgPtr, uuid));
+    _pointCloudQueueCond.notify_one(); // 通知等待的线程
   }
 }
 
@@ -397,8 +434,10 @@ void DeviceManager::localRunImageCallback(
       return;
     }
   }
-  if (msgPtr && _image_cb) {
-    _image_cb(msgPtr, uuid);
+  if (msgPtr) {
+    std::lock_guard<std::mutex> lg(_imageQueueMutex);
+    _imageQueue.push(std::make_pair(msgPtr, uuid));
+    _imageQueueCond.notify_one(); // 通知等待的线程
   }
 }
 
@@ -416,8 +455,10 @@ void DeviceManager::localRunImuCallback(
       return;
     }
   }
-  if (msgPtr && _imu_cb) {
-    _imu_cb(msgPtr, uuid);
+  if (msgPtr) {
+    std::lock_guard<std::mutex> lg(_imuQueueMutex);
+    _imuQueue.push(std::make_pair(msgPtr, uuid));
+    _imuQueueCond.notify_one(); // 通知等待的线程
   }
 }
 
@@ -550,6 +591,60 @@ void DeviceManager::hotplugWorkThread() {
       }
     }
     std::this_thread::sleep_for(std::chrono::milliseconds(200));
+  }
+}
+
+void DeviceManager::processPointCloudQueue() {
+  while (!_stopProcessingThreads) {
+      std::pair<std::shared_ptr<PointCloudT<RsPointXYZIRT>>, std::string> msgPair;
+      {
+          std::unique_lock<std::mutex> lock(_pointCloudQueueMutex);
+          _pointCloudQueueCond.wait(lock, [this] {
+              return !_pointCloudQueue.empty() || _stopProcessingThreads;
+          });
+          if (_stopProcessingThreads) break;
+          msgPair = _pointCloudQueue.front();
+          _pointCloudQueue.pop();
+      }
+      if (msgPair.first && _pc_cb) {
+          _pc_cb(msgPair.first, msgPair.second);
+      }
+  }
+}
+
+void DeviceManager::processImageQueue() {
+  while (!_stopProcessingThreads) {
+      std::pair<std::shared_ptr<robosense::lidar::ImageData>, std::string> msgPair;
+      {
+          std::unique_lock<std::mutex> lock(_imageQueueMutex);
+          _imageQueueCond.wait(lock, [this] {
+              return !_imageQueue.empty() || _stopProcessingThreads;
+          });
+          if (_stopProcessingThreads) break;
+          msgPair = _imageQueue.front();
+          _imageQueue.pop();
+      }
+      if (msgPair.first && _image_cb) {
+          _image_cb(msgPair.first, msgPair.second);
+      }
+  }
+}
+
+void DeviceManager::processImuQueue() {
+  while (!_stopProcessingThreads) {
+      std::pair<std::shared_ptr<robosense::lidar::ImuData>, std::string> msgPair;
+      {
+          std::unique_lock<std::mutex> lock(_imuQueueMutex);
+          _imuQueueCond.wait(lock, [this] {
+              return !_imuQueue.empty() || _stopProcessingThreads;
+          });
+          if (_stopProcessingThreads) break;
+          msgPair = _imuQueue.front();
+          _imuQueue.pop();
+      }
+      if (msgPair.first && _imu_cb) {
+          _imu_cb(msgPair.first, msgPair.second);
+      }
   }
 }
 

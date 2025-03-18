@@ -1,3 +1,19 @@
+/*********************************************************************************************************************
+  Copyright 2025 RoboSense Technology Co., Ltd
+
+    Licensed under the Apache License, Version 2.0 (the "License");
+    you may not use this file except in compliance with the License.
+    You may obtain a copy of the License at
+
+  http://www.apache.org/licenses/LICENSE-2.0
+
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an "AS IS" BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and
+    limitations under the License.
+*********************************************************************************************************************/
+
 #ifndef SENSORMANAGER_H
 #define SENSORMANAGER_H
 
@@ -125,6 +141,9 @@ private:
   localRunImuCallback(const std::shared_ptr<robosense::lidar::ImuData> &msgPtr,
                       const std::string &uuid);
   void hotplugWorkThread();
+  void processPointCloudQueue();
+  void processImageQueue();
+  void processImuQueue();
 
 private:
   std::thread _m_thread;
@@ -147,6 +166,28 @@ private:
 private:
   const uint32_t VENDOR_ID = 0x3840;
   const uint32_t PRODUCT_ID = 0x1010;
+  // 消息处理队列
+  std::queue<std::pair<std::shared_ptr<PointCloudT<RsPointXYZIRT>>, std::string>> _pointCloudQueue;
+  std::queue<std::pair<std::shared_ptr<robosense::lidar::ImageData>, std::string>> _imageQueue;
+  std::queue<std::pair<std::shared_ptr<robosense::lidar::ImuData>, std::string>> _imuQueue;
+
+  // 队列互斥锁
+  std::mutex _pointCloudQueueMutex;
+  std::mutex _imageQueueMutex;
+  std::mutex _imuQueueMutex;
+
+  // 条件变量
+  std::condition_variable _pointCloudQueueCond;
+  std::condition_variable _imageQueueCond;
+  std::condition_variable _imuQueueCond;
+
+  // 线程停止标志
+  std::atomic_bool _stopProcessingThreads;
+
+  // 消息处理线程
+  std::thread _pointCloudProcessingThread;
+  std::thread _imageProcessingThread;
+  std::thread _imuProcessingThread;
 };
 
 } // namespace device

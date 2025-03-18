@@ -28,19 +28,11 @@ cd /codepath/src/ros_metas/scripts
 sudo bash metaS_usb_permission.sh
 ```
 
-Wait for the installation. If the result is printed as shown in the installation diagram, the installation is successful. Restart the computer.
-
-![image-20250308155328615](/home/sti/.config/Typora/typora-user-images/image-20250308155328615.png)
-
-
+Wait for the installation, and restart the computer.
 
 ### 3.2 Hardware Connect 
 
-Due to the large amount of data transmission of the device provided by Robosense, it is required to use USB3.0 access. After connection, you can use the usbview tool to check for further confirmation:
-
-![image-20250308155413477](/home/sti/.config/Typora/typora-user-images/image-20250308155413477.png)
-
-
+Due to the large amount of data transmission of the device provided by Robosense, it is required to use USB3.0 access. 
 
 ## 4. Build 
 
