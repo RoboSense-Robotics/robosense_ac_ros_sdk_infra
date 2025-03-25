@@ -21,7 +21,7 @@ Open a new terminal in the scripts folder in the current project directory, inst
 
 ```shell
 # Go to the script directory under source code
-cd /codepath/src/ros_metas/scripts
+cd /codepath/src/ac_driver/scripts
 # First access to a new device execution (only once required)
 sudo bash metaS_usb_permission.sh
 ```

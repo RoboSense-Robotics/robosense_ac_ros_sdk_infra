@@ -1,10 +1,10 @@
 # ros2_metas
 
-[README](http://10.10.0.20/super_sensor_sdk/ros2_sdk/sdk_infra/-/blob/main/modules/ros_metas/README.md) | [中文文档](http://10.10.0.20/super_sensor_sdk/ros2_sdk/sdk_infra/-/blob/main/modules/ros_metas/README_CN.md)
+[README](http://10.10.0.20/super_sensor_sdk/ros2_sdk/sdk_infra/-/blob/main/modules/ac_driver/README.md) | [中文文档](http://10.10.0.20/super_sensor_sdk/ros2_sdk/sdk_infra/-/blob/main/modules/ac_driver/README_CN.md)
 
 ## 1. Introduction
 
-ros_metas is a MetaS sensor-driven ROS middleware node that receives sensor data, integrates and publishes it to other nodes for use. Sensor data includes cameras, liDAR and IMUs.
+ac_driver is a MetaS sensor-driven ROS middleware node that receives sensor data, integrates and publishes it to other nodes for use. Sensor data includes cameras, liDAR and IMUs.
 
 ## 2. Installation
 
@@ -70,14 +70,14 @@ catkin_make
 
 ## 3. Usage
 
-### 3.1 Prepare the ros_metas environment
+### 3.1 Prepare the ac_driver environment
 For the compiled package, run the source command to set the node runtime environment. For the bash interpreter terminal and the zsh interpreter terminal, run the following commands respectively
 ```bash
 source devel/setup.bash 
 ```
 
-### 3.2 Run the ros_metas Node
-Run the following command to run the ros_metas node
+### 3.2 Run the ac_driver Node
+Run the following command to run the ac_driver node
 
 ```bash
 roslaunch ac_driver start.launch
@@ -85,10 +85,10 @@ roslaunch ac_driver start.launch
 
 ## 4. Features
 ### 4.1  Dependencies
-The ros_metas node relies on several key libraries and packages to function properly. Here is a detailed list of the dependencies:
+The ac_driver node relies on several key libraries and packages to function properly. Here is a detailed list of the dependencies:
 
 #### 4.1.2 robosense_msgs:
-This custom ROS package defines the message formats for H.265 compressed images and other sensor data specific to the metaS sensors. It is essential for the ros_metas node to interpret and publish the sensor data correctly.
+This custom ROS package defines the message formats for H.265 compressed images and other sensor data specific to the metaS sensors. It is essential for the ac_driver node to interpret and publish the sensor data correctly.
 ### 4.2 Topic 
 1. camera RGB image topic:/rs_camera/rgb
 2. lidar topic:/rs_lidar/points

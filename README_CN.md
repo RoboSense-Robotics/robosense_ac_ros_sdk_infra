@@ -21,7 +21,7 @@
 
 ```shell
 # 进入源码下的脚本目录
-cd /codepath/src/ros_metas/scripts
+cd /codepath/src/ac_driver/scripts
 # 首次接入新设备执行（只需要一次）
 sudo bash metaS_usb_permission.sh
 ```
