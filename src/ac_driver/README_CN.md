@@ -4,7 +4,7 @@
 
 ## 1. 简介
 
-ros_metas是MetaS传感器驱动的ROS中间件节点,用于接收传感器数据，整合和发布给其它节点使用。传感器数据包括摄像头，激光雷达和IMU。
+ac_driver是MetaS传感器驱动的ROS中间件节点,用于接收传感器数据，整合和发布给其它节点使用。传感器数据包括摄像头，激光雷达和IMU。
 
 ## 2. 构建
 
@@ -80,8 +80,8 @@ catkin_make
 source devel/setup.bash 
 ```
 
-### 3.2 运行ros_metas节点
-使用以下命令运行ros_metas节点
+### 3.2 运行ac_driver节点
+使用以下命令运行ac_driver节点
 
 ```bash
 roslaunch ac_driver start.launch
@@ -91,7 +91,7 @@ roslaunch ac_driver start.launch
 
 ## 4. 特性
 ### 4.1  依赖
-ros_metas节点依赖以下关键的库和软件包:
+ac_driver节点依赖以下关键的库和软件包:
 
 #### 4.1.2 robosense_msgs:
 为H.265定制的ROS消息，用于传输metaS传感器的图像数据。

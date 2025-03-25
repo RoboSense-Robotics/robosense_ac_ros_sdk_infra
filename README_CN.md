@@ -34,7 +34,7 @@ sudo bash metaS_usb_permission.sh
 
 
 
-## 4. 编译metas_ros
+## 4. 编译ac_driver
 
 - 步骤1: 打开新的终端，将终端路径切换到包含package.xml的src文件夹目录路径
 
@@ -46,7 +46,7 @@ sudo bash metaS_usb_permission.sh
   catkin_make
   ```
 
-## 5. 运行metas_ros
+## 5. 运行ac_driver
 
 - 步骤1: 对于编译好的包，执行source命令设置节点运行环境: 对于bash解释器终端和zsh解释器终端，分别运行如下对应命令
 
