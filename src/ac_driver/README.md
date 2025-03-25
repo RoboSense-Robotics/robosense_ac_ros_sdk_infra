@@ -80,7 +80,7 @@ source devel/setup.bash
 Run the following command to run the ros_metas node
 
 ```bash
-roslaunch metas_ros start.launch
+roslaunch ac_driver start.launch
 ```
 
 ## 4. Features

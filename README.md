@@ -54,7 +54,7 @@ Due to the large amount of data transmission of the device provided by Robosense
 - Step2: Run node: 
 
   ```shell
-  roslaunch metas_ros start.launch 
+  roslaunch ac_driver start.launch 
   ```
 
   **Notice:  As the "start.launch" setting the rviz node to run, so the user not need to start rviz by youself**. 

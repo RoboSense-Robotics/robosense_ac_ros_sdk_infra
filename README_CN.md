@@ -61,7 +61,7 @@ sudo bash metaS_usb_permission.sh
 - 步骤2: 启动节点: 
 
   ```sh
-  roslaunch metas_ros start.launch 
+  roslaunch ac_driver start.launch 
   ```
 
   由于launch文件中配置了自动启动配置好的rviz工具，所以使用者无须单独启动rviz工具。

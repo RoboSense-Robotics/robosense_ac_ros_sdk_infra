@@ -84,7 +84,7 @@ source devel/setup.bash
 使用以下命令运行ros_metas节点
 
 ```bash
-roslaunch metas_ros start.launch
+roslaunch ac_driver start.launch
 ```
 
 
