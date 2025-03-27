@@ -1,10 +1,10 @@
-# ros_ac_sdk_infra  
+# **[robosense_ac_ros_sdk_infra](https://github.com/RoboSense-Robotics/robosense_ac_ros_sdk_infra)**
 
 [README](./README.md)|[中文文档](README_CN.md)
 
 ## 1. 简介
 
-​	ros_ac_sdk_infra工程项目是基于ROS的包工程，基于该项目可以实现在ROS环境中，在接入RoboSense AC硬件即可可视化查看设备输出的点云、图像、IMU数据。
+​	robosense_ac_ros_sdk_infra工程项目是基于ROS的包工程，基于该项目可以实现在ROS环境中，在接入RoboSense AC硬件即可可视化查看设备输出的点云、图像、IMU数据。
 
 
 ## 2. 前置依赖
