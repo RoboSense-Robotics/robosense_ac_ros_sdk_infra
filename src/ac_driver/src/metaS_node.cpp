@@ -32,6 +32,10 @@
 #include <iostream>
 #include <memory>
 #include <vector>
+#include <thread>
+#include <condition_variable>
+#include <queue>
+// #include <sys/prctl.h>
 
 #ifdef RK3588
 extern "C" {
@@ -261,6 +265,9 @@ public:
     }
 
     logInfo("Start...");
+
+    jpeg_thread_running = true;
+    jpeg_thread = std::thread(&MSPublisher::jpeg_thread_func, this);
   }
 
   /**
@@ -269,6 +276,15 @@ public:
   ~MSPublisher() {
     if (device_manager_ptr) {
       device_manager_ptr->stop();
+    }
+
+    {
+      std::lock_guard<std::mutex> lock(jpeg_queue_mutex);
+      jpeg_thread_running = false;
+    }
+    jpeg_queue_cv.notify_one();
+    if (jpeg_thread.joinable()) {
+      jpeg_thread.join();
     }
   };
 
@@ -443,39 +459,66 @@ private:
   }
 #else
   void jpeg_handle(const std::shared_ptr<robosense::lidar::ImageData> &frame) {
-    int ret;
-    uint64_t timestampNs = frame->timestamp * 1000000000;
-    uint32_t sec = timestampNs / 1000000000;
-    uint32_t nsec = timestampNs % 1000000000;
-#ifdef ROS_FOUND
-    auto custom_time = ros::Time(sec, nsec);
-    auto jpeg_msg = std::make_shared<robosense_msgs::RsCompressedImage>();
-#elif ROS2_FOUND
-    auto custom_time = rclcpp::Time(sec, nsec);
-    auto jpeg_msg = std::make_shared<robosense_msgs::msg::RsCompressedImage>();
-#endif // ROS_ROS2_FOUND
-    std::vector<unsigned char> jpegBuffer(imageWidth * imageHeight * 4.5, '\0');
-
-    size_t jpegBufferLen = jpegBuffer.size();
-    ret =
-        jpegEncoder.encode((unsigned char *)frame->data.get(),
-                           frame->data_bytes, jpegBuffer.data(), jpegBufferLen);
-    if (ret != 0) {
-      fprintf(stderr, "Error jepg encoding\n");
-      return;
+    {
+      std::lock_guard<std::mutex> lock(jpeg_queue_mutex);
+      jpeg_queue.push(frame);
     }
+    jpeg_queue_cv.notify_one();
+  }
 
-    // Publish the jpeg frame as a robosense message
-    jpeg_msg->header.stamp = custom_time;
-    jpeg_msg->header.frame_id = "jpeg nv12";
-    jpeg_msg->data.resize(jpegBufferLen);
-    std::memcpy(jpeg_msg->data.data(), jpegBuffer.data(), jpegBufferLen);
+  void jpeg_thread_func() {
+    // prctl(PR_SET_NAME, "jpeg_thread", 0, 0, 0);
+    while (jpeg_thread_running) {
+      std::shared_ptr<robosense::lidar::ImageData> frame;
+      {
+        std::unique_lock<std::mutex> lock(jpeg_queue_mutex);
+        jpeg_queue_cv.wait(lock, [this]() {
+          return !jpeg_queue.empty() || !jpeg_thread_running;
+        });
+
+        if (!jpeg_thread_running && jpeg_queue.empty()) {
+          break;
+        }
+
+        frame = jpeg_queue.front();
+        jpeg_queue.pop();
+      }
+
+      if (frame) {
+        int ret;
+        uint64_t timestampNs = frame->timestamp * 1000000000;
+        uint32_t sec = timestampNs / 1000000000;
+        uint32_t nsec = timestampNs % 1000000000;
+#ifdef ROS_FOUND
+        auto custom_time = ros::Time(sec, nsec);
+        auto jpeg_msg = std::make_shared<robosense_msgs::RsCompressedImage>();
+#elif ROS2_FOUND
+        auto custom_time = rclcpp::Time(sec, nsec);
+        auto jpeg_msg = std::make_shared<robosense_msgs::msg::RsCompressedImage>();
+#endif // ROS_ROS2_FOUND
+        std::vector<unsigned char> jpegBuffer(imageWidth * imageHeight * 4.5, '\0');
+
+        size_t jpegBufferLen = jpegBuffer.size();
+        ret = jpegEncoder.encode((unsigned char *)frame->data.get(),
+                                 frame->data_bytes, jpegBuffer.data(), jpegBufferLen);
+        if (ret != 0) {
+          fprintf(stderr, "Error jpeg encoding\n");
+          continue;
+        }
+
+        // Publish the jpeg frame as a robosense message
+        jpeg_msg->header.stamp = custom_time;
+        jpeg_msg->header.frame_id = "jpeg nv12";
+        jpeg_msg->data.resize(jpegBufferLen);
+        std::memcpy(jpeg_msg->data.data(), jpegBuffer.data(), jpegBufferLen);
 
 #ifdef ROS_FOUND
-    publisher_jpeg.publish(*jpeg_msg);
+        publisher_jpeg.publish(*jpeg_msg);
 #elif ROS2_FOUND
-    publisher_jpeg->publish(*jpeg_msg);
+        publisher_jpeg->publish(*jpeg_msg);
 #endif // ROS_ROS2_FOUND
+      }
+    }
   }
 #endif // RK3588
 
@@ -491,8 +534,10 @@ private:
     auto rgb_msg = std::make_shared<sensor_msgs::msg::Image>();
 #endif // ROS_ROS2_FOUND
 
+    std::vector<uint8_t> rgb_buf(frame->width * frame->height * 3);
+
 #ifdef RK3588
-    // NV12 to RGB24  for rock hw
+    // NV12 to RGB24 for rock hw
     int ret = 0;
     int src_format;
     int dst_format;
@@ -510,8 +555,6 @@ private:
 
     dst_buf_size =
         frame->width * frame->height * get_bpp_from_format(RK_FORMAT_RGB_888);
-
-    std::vector<uint8_t> rgb_buf(dst_buf_size);
 
     dst_buf = (char *)rgb_buf.data();
 
@@ -555,16 +598,12 @@ private:
     if (dst_handle)
       releasebuffer_handle(dst_handle);
 #else
-    // NV12 to RGB24  for cpu
-    unsigned int required_size;
+    // NV12 to RGB24 for CPU
     unsigned int y_size;
     uint8_t *y_plane;
     uint8_t *uv_plane;
     int camera_height = frame->height;
     int camera_width = frame->width;
-
-    required_size = camera_height * camera_width * 3;
-    std::vector<uint8_t> rgb_buf(required_size);
 
     y_size = camera_height * camera_width;
     y_plane = static_cast<uint8_t *>(frame->data.get());
@@ -593,6 +632,7 @@ private:
       }
     }
 #endif // RK3588
+
     // Publish the RGB image as a ROS Image message
     rgb_msg->header.stamp = custom_time;
     rgb_msg->header.frame_id = "rgb";
@@ -831,6 +871,12 @@ private:
   FILE *outfile;
   int out_count;
 #endif // DEBUG_TO_FILE
+
+  std::thread jpeg_thread;
+  std::mutex jpeg_queue_mutex;
+  std::condition_variable jpeg_queue_cv;
+  std::queue<std::shared_ptr<robosense::lidar::ImageData>> jpeg_queue;
+  bool jpeg_thread_running;
 };
 
 /**

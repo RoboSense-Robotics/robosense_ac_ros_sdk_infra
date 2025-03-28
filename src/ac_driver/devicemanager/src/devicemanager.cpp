@@ -13,7 +13,7 @@
     See the License for the specific language governing permissions and
     limitations under the License.
 *********************************************************************************************************************/
-
+// #include <sys/prctl.h>
 #include "hyper_vision/devicemanager/devicemanager.h"
 
 namespace robosense {
@@ -55,6 +55,7 @@ bool DeviceManager::init(const bool isEnableDebug) {
   }
 
   auto thread_usb_event = [this](void *ptr) {
+    // prctl(PR_SET_NAME, "usb_event_thread", 0, 0, 0);
     struct timeval tv = {0, 100000};
     while (!_kill_handler_thread) {
       libusb_handle_events_timeout_completed(_usb_ctx, &tv,
@@ -520,7 +521,7 @@ int DeviceManager::findDevices(
 void DeviceManager::hotplugWorkThread() {
   std::vector<DeviceInfoItem> attachDevices;
   std::vector<DeviceInfoItem> detachDevices;
-
+  // prctl(PR_SET_NAME, "hotplugWorkThread");
   while (_start) {
     // Step1: Search Device(s)
     std::map<std::string, DeviceInfoItem> deviceItems;
@@ -595,6 +596,7 @@ void DeviceManager::hotplugWorkThread() {
 }
 
 void DeviceManager::processPointCloudQueue() {
+  // prctl(PR_SET_NAME, "processPointCloudQueue");
   while (!_stopProcessingThreads) {
       std::pair<std::shared_ptr<PointCloudT<RsPointXYZIRT>>, std::string> msgPair;
       {
@@ -613,6 +615,7 @@ void DeviceManager::processPointCloudQueue() {
 }
 
 void DeviceManager::processImageQueue() {
+  // prctl(PR_SET_NAME, "processImageQueue");
   while (!_stopProcessingThreads) {
       std::pair<std::shared_ptr<robosense::lidar::ImageData>, std::string> msgPair;
       {
@@ -631,6 +634,7 @@ void DeviceManager::processImageQueue() {
 }
 
 void DeviceManager::processImuQueue() {
+  // prctl(PR_SET_NAME, "processImuQueue");
   while (!_stopProcessingThreads) {
       std::pair<std::shared_ptr<robosense::lidar::ImuData>, std::string> msgPair;
       {
