@@ -2,6 +2,10 @@
   <!-- Launch ms_node -->
   <node name="ms_node" pkg="ac_driver" type="ms_node" output="screen">
     <!-- Add parameters or remappings here if needed -->
+    <param name="image_input_fps" value="30" />
+    <param name="imu_input_fps" value="200" />
+    <param name="enable_jpeg" value="false" />
+
   </node>
   
   <!-- rviz -->

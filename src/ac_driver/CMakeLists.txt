@@ -4,31 +4,36 @@ project(ac_driver)
 ## Compile as C++14, supported in ROS Kinetic and newer
 add_compile_options(-std=c++17)
 
-execute_process(
-  COMMAND bash -c "cat /proc/cpuinfo | grep 'Rockchip RK3588' | uniq | cut -d ':' -f 2"
-  OUTPUT_VARIABLE CPU_MODEL
-  OUTPUT_STRIP_TRAILING_WHITESPACE
-)
-
-if(CPU_MODEL STREQUAL " Rockchip RK3588")
-  message(STATUS "Detected RK3588 chip")
-  set(TARGET_ARCH "RK3588")
-  add_definitions(-DRK3588)
-  add_definitions(-DSUPPORT_H265)
-else()
 if(CMAKE_SYSTEM_PROCESSOR MATCHES "^(arm|aarch64)$")
+  file(READ "/proc/device-tree/model" COMPATIBLE_CONTENT)
+  execute_process(
+    COMMAND bash -c "cat /proc/cpuinfo | grep 'Rockchip RK3588' | uniq | cut -d ':' -f 2"
+    OUTPUT_VARIABLE CPU_MODEL
+    OUTPUT_STRIP_TRAILING_WHITESPACE
+  )
+  if(COMPATIBLE_CONTENT MATCHES "Jetson")
+    message(STATUS "Detected Orin platform")
+    set(TARGET_ARCH "JETSON_ORIN")
+    add_definitions(-DJETSON_ORIN)
+  elseif(CPU_MODEL STREQUAL " Rockchip RK3588")
+    message(STATUS "Detected RK3588 chip")
+    set(TARGET_ARCH "RK3588")
+    add_definitions(-DRK3588)
+    add_definitions(-DSUPPORT_H265)
+  else()
+  message(STATUS "cur model: ${COMPATIBLE_CONTENT}")
     set(TARGET_ARCH "ARM")
     add_definitions(-DARM_ARCH)
-    add_definitions(-DSUPPORT_H265)
-elseif(CMAKE_SYSTEM_PROCESSOR MATCHES "^(x86_64|i686)$")
+    endif()
+    elseif(CMAKE_SYSTEM_PROCESSOR MATCHES "^(x86_64|i686)$")
     set(TARGET_ARCH "X86")
     add_definitions(-DX86_ARCH)
     include_directories(/usr/include/opencv4/)
-else()
-    message(STATUS "Unknown target architecture: ${CMAKE_SYSTEM_PROCESSOR}")
-    set(TARGET_ARCH "UNKNOWN")
+  else()
+  message(STATUS "Unknown target architecture: ${CMAKE_SYSTEM_PROCESSOR}")
+  set(TARGET_ARCH "UNKNOWN")
 endif()
-endif()
+  
 
 #av_codec#
 find_library(AVCODEC_LIBRARY avcodec)
@@ -168,6 +173,33 @@ if(roscpp_FOUND)
       ${XEXT_LIBRARY}
       ${XV_LIBRARY}
     )
+  elseif(TARGET_ARCH STREQUAL "JETSON_ORIN")
+  # 添加 cuda_nv12_remap_norm 子模块
+  add_subdirectory(cuda_nv12_remap_norm)
+
+  include_directories(/usr/local/cuda/include
+    ./src) # 添加 CUDA 头文件路径
+  target_include_directories(ms_node PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/../ac_codec/include)
+
+  # 查找 CUDA 库
+  find_library(CUDA_LIBRARY cuda HINTS /usr/lib/aarch64-linux-gnu/tegra REQUIRED)
+  find_library(CUDART_LIBRARY cudart HINTS /usr/local/cuda/lib64 REQUIRED)
+
+  if(NOT CUDA_LIBRARY OR NOT CUDART_LIBRARY)
+    message(FATAL_ERROR "Failed to find required CUDA libraries: ${CUDA_LIBRARY} or ${CUDART_LIBRARY}")
+  endif()
+
+  message(STATUS "Found CUDA_LIBRARY: ${CUDA_LIBRARY}")
+  message(STATUS "Found CUDART_LIBRARY: ${CUDART_LIBRARY}")
+
+  target_link_directories(ms_node PRIVATE ./lib)
+  target_link_libraries(ms_node 
+    ${CUDA_LIBRARY}
+    ${CUDART_LIBRARY}
+    ${OpenCV_LIBS}
+    cuda_nv12_remap_norm
+  )
+  
   elseif(TARGET_ARCH STREQUAL "X86" OR TARGET_ARCH STREQUAL "ARM")
       target_include_directories(ms_node PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/../ac_codec/include)
       target_link_libraries(ms_node ${OpenCV_LIBS})

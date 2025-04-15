@@ -13,7 +13,6 @@
     See the License for the specific language governing permissions and
     limitations under the License.
 *********************************************************************************************************************/
-// #include <sys/prctl.h>
 #include "hyper_vision/devicemanager/devicemanager.h"
 
 namespace robosense {
@@ -28,19 +27,24 @@ DeviceManager::DeviceManager() {
   _stopProcessingThreads = false;
 
   // 启动消息处理线程
-  _pointCloudProcessingThread = std::thread(&DeviceManager::processPointCloudQueue, this);
+  _pointCloudProcessingThread =
+      std::thread(&DeviceManager::processPointCloudQueue, this);
   _imageProcessingThread = std::thread(&DeviceManager::processImageQueue, this);
   _imuProcessingThread = std::thread(&DeviceManager::processImuQueue, this);
 }
 
 DeviceManager::~DeviceManager() { stop(); }
 
-bool DeviceManager::init(const bool isEnableDebug) {
+bool DeviceManager::init(const int image_input_fps, const int imu_input_fps,
+                         const bool isEnableDebug) {
   if (_inited) {
     return true;
   }
   _is_stoping_ = false;
   _enable_debug = isEnableDebug;
+  _image_input_fps = image_input_fps;
+  _imu_input_fps = imu_input_fps;
+
   RS_INFOL << "DeviceManager: _enable_debug = " << _enable_debug << RS_REND;
 
   int res;
@@ -55,7 +59,6 @@ bool DeviceManager::init(const bool isEnableDebug) {
   }
 
   auto thread_usb_event = [this](void *ptr) {
-    // prctl(PR_SET_NAME, "usb_event_thread", 0, 0, 0);
     struct timeval tv = {0, 100000};
     while (!_kill_handler_thread) {
       libusb_handle_events_timeout_completed(_usb_ctx, &tv,
@@ -87,19 +90,6 @@ bool DeviceManager::init(const bool isEnableDebug) {
 }
 
 int DeviceManager::stop() {
-  _stopProcessingThreads = true;
-  _pointCloudQueueCond.notify_one();
-  if (_pointCloudProcessingThread.joinable()) {
-      _pointCloudProcessingThread.join();
-  }
-  _imageQueueCond.notify_one();
-  if (_imageProcessingThread.joinable()) {
-      _imageProcessingThread.join();
-  }
-  _imuQueueCond.notify_one();
-  if (_imuProcessingThread.joinable()) {
-      _imuProcessingThread.join();
-  }
   if (!_inited) {
     return 0;
   }
@@ -130,6 +120,22 @@ int DeviceManager::stop() {
   if (_usb_ctx) {
     libusb_exit(_usb_ctx);
     _usb_ctx = nullptr;
+  }
+
+  if (_stopProcessingThreads == false) {
+    _stopProcessingThreads = true;
+    _pointCloudQueueCond.notify_all();
+    if (_pointCloudProcessingThread.joinable()) {
+      _pointCloudProcessingThread.join();
+    }
+    _imageQueueCond.notify_all();
+    if (_imageProcessingThread.joinable()) {
+      _imageProcessingThread.join();
+    }
+    _imuQueueCond.notify_all();
+    if (_imuProcessingThread.joinable()) {
+      _imuProcessingThread.join();
+    }
   }
 
   _inited = false;
@@ -210,9 +216,16 @@ int DeviceManager::openDevice(const std::string &device_uuid) {
   driverParam.input_type = robosense::lidar::InputType::USB;
   driverParam.lidar_type = robosense::lidar::RS_AC1;
   driverParam.input_param.enable_image = true; // enable image output
+#if defined(RK3588) || defined(JETSON_ORIN) // 当前只针对rk3588对nv12转码做了优化，默认出nv12
   driverParam.input_param.image_format =
       robosense::lidar::FRAME_FORMAT_NV12; // 设置为RGB24/NV12/BGR24
+#else
+  driverParam.input_param.image_format =
+    robosense::lidar::FRAME_FORMAT_RGB24; // 设置为RGB24/NV12/BGR24
+#endif
   driverParam.input_param.device_uuid = iterMap->second.uuid;
+  driverParam.input_param.image_fps = _image_input_fps;
+  driverParam.input_param.imu_fps = _imu_input_fps;
 
   bool isSuccess = driver_ptr->init(driverParam);
   if (!isSuccess) {
@@ -521,7 +534,7 @@ int DeviceManager::findDevices(
 void DeviceManager::hotplugWorkThread() {
   std::vector<DeviceInfoItem> attachDevices;
   std::vector<DeviceInfoItem> detachDevices;
-  // prctl(PR_SET_NAME, "hotplugWorkThread");
+
   while (_start) {
     // Step1: Search Device(s)
     std::map<std::string, DeviceInfoItem> deviceItems;
@@ -596,59 +609,60 @@ void DeviceManager::hotplugWorkThread() {
 }
 
 void DeviceManager::processPointCloudQueue() {
-  // prctl(PR_SET_NAME, "processPointCloudQueue");
   while (!_stopProcessingThreads) {
-      std::pair<std::shared_ptr<PointCloudT<RsPointXYZIRT>>, std::string> msgPair;
-      {
-          std::unique_lock<std::mutex> lock(_pointCloudQueueMutex);
-          _pointCloudQueueCond.wait(lock, [this] {
-              return !_pointCloudQueue.empty() || _stopProcessingThreads;
-          });
-          if (_stopProcessingThreads) break;
-          msgPair = _pointCloudQueue.front();
-          _pointCloudQueue.pop();
-      }
-      if (msgPair.first && _pc_cb) {
-          _pc_cb(msgPair.first, msgPair.second);
-      }
+    std::pair<std::shared_ptr<PointCloudT<RsPointXYZIRT>>, std::string> msgPair;
+    {
+      std::unique_lock<std::mutex> lock(_pointCloudQueueMutex);
+      _pointCloudQueueCond.wait(lock, [this] {
+        return !_pointCloudQueue.empty() || _stopProcessingThreads;
+      });
+      if (_stopProcessingThreads)
+        break;
+      msgPair = _pointCloudQueue.front();
+      _pointCloudQueue.pop();
+    }
+    if (msgPair.first && _pc_cb) {
+      _pc_cb(msgPair.first, msgPair.second);
+    }
   }
 }
 
 void DeviceManager::processImageQueue() {
-  // prctl(PR_SET_NAME, "processImageQueue");
   while (!_stopProcessingThreads) {
-      std::pair<std::shared_ptr<robosense::lidar::ImageData>, std::string> msgPair;
-      {
-          std::unique_lock<std::mutex> lock(_imageQueueMutex);
-          _imageQueueCond.wait(lock, [this] {
-              return !_imageQueue.empty() || _stopProcessingThreads;
-          });
-          if (_stopProcessingThreads) break;
-          msgPair = _imageQueue.front();
-          _imageQueue.pop();
-      }
-      if (msgPair.first && _image_cb) {
-          _image_cb(msgPair.first, msgPair.second);
-      }
+    std::pair<std::shared_ptr<robosense::lidar::ImageData>, std::string>
+        msgPair;
+    {
+      std::unique_lock<std::mutex> lock(_imageQueueMutex);
+      _imageQueueCond.wait(lock, [this] {
+        return !_imageQueue.empty() || _stopProcessingThreads;
+      });
+      if (_stopProcessingThreads)
+        break;
+      msgPair = _imageQueue.front();
+      _imageQueue.pop();
+    }
+    if (msgPair.first && _image_cb) {
+      _image_cb(msgPair.first, msgPair.second);
+    }
   }
 }
 
 void DeviceManager::processImuQueue() {
-  // prctl(PR_SET_NAME, "processImuQueue");
   while (!_stopProcessingThreads) {
-      std::pair<std::shared_ptr<robosense::lidar::ImuData>, std::string> msgPair;
-      {
-          std::unique_lock<std::mutex> lock(_imuQueueMutex);
-          _imuQueueCond.wait(lock, [this] {
-              return !_imuQueue.empty() || _stopProcessingThreads;
-          });
-          if (_stopProcessingThreads) break;
-          msgPair = _imuQueue.front();
-          _imuQueue.pop();
-      }
-      if (msgPair.first && _imu_cb) {
-          _imu_cb(msgPair.first, msgPair.second);
-      }
+    std::pair<std::shared_ptr<robosense::lidar::ImuData>, std::string> msgPair;
+    {
+      std::unique_lock<std::mutex> lock(_imuQueueMutex);
+      _imuQueueCond.wait(lock, [this] {
+        return !_imuQueue.empty() || _stopProcessingThreads;
+      });
+      if (_stopProcessingThreads)
+        break;
+      msgPair = _imuQueue.front();
+      _imuQueue.pop();
+    }
+    if (msgPair.first && _imu_cb) {
+      _imu_cb(msgPair.first, msgPair.second);
+    }
   }
 }
 
