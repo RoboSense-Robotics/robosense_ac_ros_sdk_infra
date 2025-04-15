@@ -70,24 +70,73 @@ sudo apt-get install libavformat-dev libavdevice-dev libavcodec-dev
 ```bash
 catkin_make
 ```
+
+#### 2.1.4 Jetson Orin
+
+对于Jetson Orin平台，安装依赖库,如下示例:
+
+```shell
+sudo apt-get update
+sudo apt-get install libavformat-dev libavdevice-dev libavcodec-dev
+```
+
+对于Jetson Orin平台，确保已安装CUDA环境，并配置相关依赖库。以下是安装CUDA的参考链接和命令：
+- [NVIDIA CUDA Toolkit](https://developer.nvidia.com/cuda-downloads)
+
+安装完成后，确保CUDA库路径已正确配置，例如：
+```bash
+export PATH=/usr/local/cuda/bin:$PATH
+export LD_LIBRARY_PATH=/usr/local/cuda/lib64:$LD_LIBRARY_PATH
+```
+
+然后按照常规步骤进行编译：
+```bash
+catkin_make
+```
+
 ## 3. 运行
 
 ### 3.1 准备环境
 
-对于编译好的包，执行source命令设置节点运行环境: 对于bash解释器终端和zsh解释器终端，分别运行如下对应命令
+在启动节点之前，请确保已设置环境变量`ROS_DOMAIN_ID`，否则可能导致数据延迟异常或进程异常。例如：
+```bash
+export ROS_DOMAIN_ID=67
+```
 
+对于编译好的包，执行source命令设置节点运行环境: 对于bash解释器终端和zsh解释器终端，分别运行如下对应命令：
 ```bash
 source devel/setup.bash 
 ```
 
+```bash
+source devel/setup.zsh 
+```
+
 ### 3.2 运行ac_driver节点
+
 使用以下命令运行ac_driver节点
 
 ```bash
-roslaunch ac_driver start.launch
+roslaunch ac_driver start.launch 
+#或者 
+roscore 2>&1 >/dev/null &
+rosrun ac_driver ms_node [_image_input_fps:=30 _imu_input_fps:=200 _enable_jpeg:=false]
 ```
 
+#### 参数说明
+- `_image_input_fps`: 设置图像帧率，支持的值为10Hz/15Hz/30Hz，默认值为30Hz。
+- `_imu_input_fps`: 设置IMU帧率，支持的值为100Hz/200Hz，默认值为200Hz。
+- `_enable_jpeg`: 是否启用JPEG编码，`true`表示启用，`false`表示禁用，默认值为`false`。
 
+对于Jetson Orin平台，建议根据实际需求调整参数以优化性能。
+
+传感器支持设置图像和Imu的帧率，其中图像支持的帧率包含: 10Hz/15Hz/30Hz, Imu支持的帧率包含: 100Hz/200Hz，默认相机帧率为30Hz, Imu帧率为200Hz, 根据启动节点的方法不同，如果前述1/2所述，如果通过rosrun命令启动，则可以通过命令行形式传入参数(例如"_image_input_fps:=30 _imu_input_fps:=200")； 如果通过rosluanch 启动命令，则修改start.luanch文件中的启动参数设置。
+
+#### 格式说明
+
+- 当前已对rk3588、jetson orin平台对图像做了转码优化，默认驱动直接出nv12，通过硬件转成rgb24格式图像发布；
+
+- 其他平台默认直出rgb24，并采用cpu jepg压缩，压缩功能考虑到性能的影响，默认关闭压缩功能，可以通过enable-jpeg开关打开。
 
 ## 4. 特性
 ### 4.1  依赖
