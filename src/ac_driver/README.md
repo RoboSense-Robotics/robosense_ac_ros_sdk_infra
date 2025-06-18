@@ -117,13 +117,14 @@ Run the following command to run the ac_driver node
 roslaunch ac_driver start.launch 
 #or
 roscore 2>&1 >/dev/null &
-rosrun ac_driver ms_node [_image_input_fps:=30 _imu_input_fps:=200 _enable_jpeg:=false]
+rosrun ac_driver ms_node [_image_input_fps:=30 _imu_input_fps:=200 _enable_jpeg:=false _jpeg_quality:=70]
 ```
 
 #### Parameter Descriptions
 - `_image_input_fps`: Sets the image frame rate. Supported values are 10Hz/15Hz/30Hz. The default value is 30Hz.
 - `_imu_input_fps`: Sets the IMU frame rate. Supported values are 100Hz/200Hz. The default value is 200Hz.
 - `_enable_jpeg`: Enables or disables JPEG encoding. `true` enables it, and `false` disables it. The default value is `false`.
+- jpeg_quality: Jpeg Compression Quality, The default value is 70. 
 
 For the Jetson Orin platform, it is recommended to adjust the parameters based on actual requirements to optimize performance.
 

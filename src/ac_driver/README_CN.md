@@ -120,13 +120,14 @@ source devel/setup.zsh
 roslaunch ac_driver start.launch 
 #或者 
 roscore 2>&1 >/dev/null &
-rosrun ac_driver ms_node [_image_input_fps:=30 _imu_input_fps:=200 _enable_jpeg:=false]
+rosrun ac_driver ms_node [_image_input_fps:=30 _imu_input_fps:=200 _enable_jpeg:=false _jpeg_quality:=70]
 ```
 
 #### 参数说明
 - `_image_input_fps`: 设置图像帧率，支持的值为10Hz/15Hz/30Hz，默认值为30Hz。
 - `_imu_input_fps`: 设置IMU帧率，支持的值为100Hz/200Hz，默认值为200Hz。
 - `_enable_jpeg`: 是否启用JPEG编码，`true`表示启用，`false`表示禁用，默认值为`false`。
+- `_jpeg_quality`: Jpeg压缩质量，默认为70 
 
 对于Jetson Orin平台，建议根据实际需求调整参数以优化性能。
 

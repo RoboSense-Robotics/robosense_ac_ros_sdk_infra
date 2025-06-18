@@ -133,13 +133,18 @@ public:
     private_nh.param<int32_t>("image_input_fps", image_input_fps, 30);
     private_nh.param<int32_t>("imu_input_fps", imu_input_fps, 200);
     private_nh.param<bool>("enable_jpeg", enable_jpeg, false);
+    private_nh.param<int32_t>("jpeg_quality", jpeg_quality, 70); 
 #elif ROS2_FOUND
     this->declare_parameter<int32_t>("image_input_fps", 30);
     this->declare_parameter<int32_t>("imu_input_fps", 200);
+    this->declare_parameter<bool>("enable_jpeg", enable_jpeg, false); 
+    this->declare_parameter<int32_t>("jpeg_quality", jpeg_quality, 70); 
 
     image_input_fps =
         this->get_parameter("image_input_fps").get_value<int32_t>();
     imu_input_fps = this->get_parameter("imu_input_fps").get_value<int32_t>();
+    enable_jpeg = this->get_parameter("enable_jpeg").get_value<bool>(); 
+    jpeg_quality = this->get_parameter("jpeg_quality").get_value<int32_t>(); 
 #endif
     // check setting
     if (image_input_fps != 30 && image_input_fps != 15 &&
@@ -168,7 +173,8 @@ public:
     std::ostringstream ostr;
     ostr << "image_input_fps = " << image_input_fps
          << ", imu_input_fps = " << imu_input_fps
-          << ", enable_jpeg = " << enable_jpeg;
+         << ", enable_jpeg = " << enable_jpeg
+         << ", jpeg_quality = " << jpeg_quality; 
     logInfo(ostr.str());
 
 #ifdef ROS2_FOUND
@@ -327,6 +333,7 @@ public:
 #endif
       config.imageWidth = imageWidth;
       config.imageHeight = imageHeight;
+      config.jpegQuality = jpeg_quality; 
       config.gpuDeviceId = 0;
 
       int ret = jpegEncoder.init(config);
@@ -636,6 +643,18 @@ private:
           continue;
         }
 
+#if 0
+    // 测试jpeg压缩效果
+    static int is_write = 0;
+    if (is_write == 0) {
+      std::ofstream ofstr("/home/sti/test.jpeg",
+                          std::ios_base::binary | std::ios_base::out);
+      if (ofstr.is_open()) {
+        ofstr.write((char *)(jpegBuffer.data()), jpegBufferLen);
+      }
+      is_write = 1;
+    }
+#endif 
         // Publish the jpeg frame as a robosense message
         jpeg_msg->header.stamp = custom_time;
         jpeg_msg->header.frame_id = "jpeg";
@@ -968,6 +987,7 @@ private:
   int image_input_fps = 30;
   int imu_input_fps = 200;
   bool enable_jpeg = false;
+  int jpeg_quality = 70; 
 
   // 编码相关
   int imageWidth;
